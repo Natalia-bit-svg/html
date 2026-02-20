@@ -1,5 +1,5 @@
 -- ============================================================
---  FamilyHub — Schema do Banco de Dados MySQL  (v3 — corrigido)
+--  FamilyHub — Schema do Banco de Dados MySQL  (v4 — com logs)
 --  Execute: mysql -u root -p < schema.sql
 -- ============================================================
 
@@ -107,6 +107,18 @@ CREATE TABLE IF NOT EXISTS activity_events (
   INDEX idx_user_date (user_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ─── Histórico de Alterações (NOVO) ──────────────────────
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT NOT NULL,
+  description VARCHAR(255) NOT NULL,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_log_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_log_user (user_id),
+  INDEX idx_log_date (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ─── Limpeza automática de tokens expirados ───────────────
 DROP EVENT IF EXISTS cleanup_expired_tokens;
 CREATE EVENT cleanup_expired_tokens
@@ -116,13 +128,9 @@ CREATE EVENT cleanup_expired_tokens
     DELETE FROM auth_tokens WHERE expires_at < NOW();
 
 -- ─────────────────────────────────────────────────────────────
---  USUÁRIO DE DEMONSTRAÇÃO (CREDENCIAIS PADRÃO)
+--  USUÁRIO DE DEMONSTRAÇÃO
 --  E-mail : admin@familyhub.com
 --  Senha  : 123456
---
---  Hash gerado com PHP:
---    password_hash('123456', PASSWORD_BCRYPT, ['cost' => 12])
---  Nota: $2y$ é o prefixo PHP; equivalente ao $2b$ do bcrypt padrão.
 -- ─────────────────────────────────────────────────────────────
 INSERT INTO users (name, email, password_hash, phone, age, family_name)
 VALUES (
@@ -138,13 +146,3 @@ ON DUPLICATE KEY UPDATE
   name          = 'Admin Demo',
   family_name   = 'Família Demo',
   is_active     = 1;
-
--- ─── Notificação de boas-vindas para o usuário demo ───────
-INSERT INTO notifications (user_id, title, message, type, icon)
-SELECT id,
-  'Bem-vindo ao FamilyHub! 🎉',
-  'Conta de demonstração pronta. Use admin@familyhub.com / 123456 para acessar.',
-  'success',
-  'party-popper'
-FROM users WHERE email = 'admin@familyhub.com'
-LIMIT 1;

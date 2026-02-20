@@ -13,6 +13,8 @@
 //    GET  stats             → estatísticas globais da família
 //    GET  leaderboard       → ranking dos membros
 //    POST points            → adiciona pontos manualmente
+//    GET  logs              → lista histórico de atividades
+//    POST logs              → salva log de atividade
 // ============================================================
 
 require_once __DIR__ . '/db.php';
@@ -33,6 +35,8 @@ try {
         $route === 'stats'               && $method === 'GET'  => handleGetStats(),
         $route === 'leaderboard'         && $method === 'GET'  => handleGetLeaderboard(),
         $route === 'points'              && $method === 'POST' => handleAddPoints($body),
+        $route === 'logs'                && $method === 'GET'  => handleGetLogs(),
+        $route === 'logs'                && $method === 'POST' => handleCreateLog($body),
         default                                                => jsonError("Rota não encontrada: $route", 404),
     };
 } catch (Exception $e) {
@@ -70,7 +74,6 @@ function handleGetData(): void {
 /**
  * POST /api.php?r=data
  * Salva (upsert) o estado completo da família.
- * Body: { data: {...} }
  */
 function handleSaveData(array $body): void {
     $userId = requireAuth();
@@ -103,7 +106,6 @@ function handleSaveData(array $body): void {
 
 /**
  * GET /api.php?r=notifications
- * Lista as últimas 50 notificações do usuário.
  */
 function handleGetNotifications(): void {
     $userId = requireAuth();
@@ -123,7 +125,6 @@ function handleGetNotifications(): void {
 
 /**
  * POST /api.php?r=notifications/read
- * Marca todas as notificações do usuário como lidas.
  */
 function handleMarkAllRead(): void {
     $userId = requireAuth();
@@ -137,8 +138,6 @@ function handleMarkAllRead(): void {
 
 /**
  * POST /api.php?r=notifications/create
- * Cria uma notificação para o usuário logado.
- * Body: { title, message, type, icon }
  */
 function handleCreateNotification(array $body): void {
     $userId = requireAuth();
@@ -164,8 +163,6 @@ function handleCreateNotification(array $body): void {
 
 /**
  * POST /api.php?r=achievements
- * Registra uma conquista desbloqueada por um membro.
- * Body: { achievement_id, member_name }
  */
 function handleSaveAchievement(array $body): void {
     $userId = requireAuth();
@@ -177,7 +174,6 @@ function handleSaveAchievement(array $body): void {
 
     $pdo = getPDO();
 
-    // INSERT IGNORE evita duplicata (índice UNIQUE no schema)
     $pdo->prepare(
         'INSERT IGNORE INTO achievements_log (user_id, achievement_id, member_name)
          VALUES (?, ?, ?)'
@@ -188,13 +184,11 @@ function handleSaveAchievement(array $body): void {
 
 /**
  * GET /api.php?r=stats
- * Retorna estatísticas agregadas da família (útil para dashboard/analytics).
  */
 function handleGetStats(): void {
     $userId = requireAuth();
     $pdo    = getPDO();
 
-    // Carrega o JSON de dados da família
     $stmt = $pdo->prepare('SELECT data_json FROM family_data WHERE user_id = ?');
     $stmt->execute([$userId]);
     $row = $stmt->fetch();
@@ -222,10 +216,8 @@ function handleGetStats(): void {
         'total_conquistas'    => count($data['gamification']['conquistas'] ?? []),
         'por_categoria'       => [],
         'por_membro'          => [],
-        'por_status'          => [],
     ];
 
-    // Por categoria
     $categorias = [];
     foreach ($atividades as $a) {
         $tag = $a['tag'] ?? 'OUTROS';
@@ -233,7 +225,6 @@ function handleGetStats(): void {
     }
     $stats['por_categoria'] = $categorias;
 
-    // Por membro
     $porMembro = [];
     foreach ($atividades as $a) {
         $resp = $a['resp'] ?? 'N/A';
@@ -246,7 +237,6 @@ function handleGetStats(): void {
     }
     $stats['por_membro'] = $porMembro;
 
-    // Conquistas do banco de dados
     $achStmt = $pdo->prepare(
         'SELECT achievement_id, member_name, unlocked_at FROM achievements_log WHERE user_id = ? ORDER BY unlocked_at DESC'
     );
@@ -258,7 +248,6 @@ function handleGetStats(): void {
 
 /**
  * GET /api.php?r=leaderboard
- * Retorna ranking de pontos dos membros.
  */
 function handleGetLeaderboard(): void {
     $userId = requireAuth();
@@ -296,8 +285,6 @@ function handleGetLeaderboard(): void {
 
 /**
  * POST /api.php?r=points
- * Adiciona pontos manualmente a um membro (via ação administrativa).
- * Body: { member_name, points, reason }
  */
 function handleAddPoints(array $body): void {
     $userId = requireAuth();
@@ -324,7 +311,6 @@ function handleAddPoints(array $body): void {
     $pdo->prepare('UPDATE family_data SET data_json = ?, version = version + 1 WHERE user_id = ?')
         ->execute([$json, $userId]);
 
-    // Registra notificação
     $pdo->prepare(
         'INSERT INTO notifications (user_id, title, message, type, icon)
          VALUES (?, ?, ?, ?, ?)'
@@ -337,4 +323,52 @@ function handleAddPoints(array $body): void {
     ]);
 
     jsonSuccess(['new_total' => $data['gamification']['pontos'][$memberName]]);
+}
+
+/**
+ * GET /api.php?r=logs
+ * Retorna os últimos 20 registros do histórico de atividades.
+ */
+function handleGetLogs(): void {
+    $userId = requireAuth();
+    $pdo    = getPDO();
+
+    $stmt = $pdo->prepare(
+        'SELECT description, created_at
+         FROM activity_logs
+         WHERE user_id = ?
+         ORDER BY created_at DESC
+         LIMIT 20'
+    );
+    $stmt->execute([$userId]);
+
+    jsonSuccess(['data' => $stmt->fetchAll()]);
+}
+
+/**
+ * POST /api.php?r=logs
+ * Salva um novo registro no histórico de atividades.
+ * Body: { description }
+ */
+function handleCreateLog(array $body): void {
+    $userId     = requireAuth();
+    $description = trim($body['description'] ?? '');
+
+    if (!$description) {
+        jsonError('description é obrigatório.');
+    }
+
+    saveActivityLog($userId, $description);
+    jsonSuccess(['message' => 'Log registrado.'], 201);
+}
+
+/**
+ * Função auxiliar para salvar logs (usada internamente e em handleSaveData).
+ */
+function saveActivityLog(int $userId, string $message): void {
+    $pdo = getPDO();
+    $stmt = $pdo->prepare(
+        'INSERT INTO activity_logs (user_id, description) VALUES (?, ?)'
+    );
+    $stmt->execute([$userId, $message]);
 }

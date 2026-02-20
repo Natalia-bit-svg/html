@@ -87,15 +87,20 @@ function handleLogin(array $body): void {
         $dataStmt->execute([$user['id']]);
         $familyRow = $dataStmt->fetch();
 
+        // Determina se é novo usuário (sem dados ou dados vazios do servidor)
+        $familyData  = $familyRow ? json_decode($familyRow['data_json'], true) : null;
+        $isNewUser   = !$familyRow; // true se nunca salvou dados
+
         jsonSuccess([
-            'token'       => $token,
-            'user'        => [
+            'token'        => $token,
+            'is_new_user'  => $isNewUser,
+            'user'         => [
                 'id'         => $user['id'],
                 'name'       => $user['name'],
                 'email'      => $user['email'],
                 'familyName' => $user['family_name'],
             ],
-            'family_data' => $familyRow ? json_decode($familyRow['data_json'], true) : null,
+            'family_data'  => $familyData,
         ]);
 
     } catch (Exception $e) {
@@ -154,6 +159,30 @@ function handleRegister(array $body): void {
             'INSERT INTO auth_tokens (user_id, token, expires_at, user_agent, ip_address)
              VALUES (?, ?, ?, ?, ?)'
         )->execute([$userId, $token, $expires, $ua, $ip]);
+
+        // ── Cria registro de dados vazio para o novo usuário ──────────────
+        // Garante que o servidor sempre retorne family_data (nunca null)
+        // para diferenciar "usuário novo sem dados" de "erro de conexão".
+        $emptyData = json_encode([
+            'settings'     => ['familyName' => $familyName, 'email' => $email, 'photo' => ''],
+            'gamification' => [
+                'pontos'            => (object)[],
+                'conquistas'        => [],
+                'streaks'           => (object)[],
+                'lastActivityDate'  => (object)[],
+                'premios_resgatados'=> [],
+                'desafios'          => [],
+            ],
+            'notificacoes' => [],
+            'atividades'   => [],
+            'listas'       => [],
+            'receitas'     => [],
+            'membros'      => [],
+        ], JSON_UNESCAPED_UNICODE);
+
+        $pdo->prepare(
+            'INSERT IGNORE INTO family_data (user_id, data_json, version) VALUES (?, ?, 1)'
+        )->execute([$userId, $emptyData]);
 
         // Notificação de boas-vindas
         $pdo->prepare(

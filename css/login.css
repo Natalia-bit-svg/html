@@ -1,0 +1,73 @@
+/* ============================================================
+   FamilyHub — login.css
+   Estilos específicos da tela de login/registro
+============================================================ */
+
+body { font-family: 'Outfit', sans-serif; }
+
+/* ─── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+/* ─── Abas ───────────────────────────────────────────────── */
+.tab-active { position: relative; }
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #438370;
+  border-radius: 2px;
+}
+
+/* ─── Seções do formulário ───────────────────────────────── */
+.form-section { transition: opacity .25s, transform .25s; }
+.form-section.hidden { display: none; }
+
+/* ─── Animações ──────────────────────────────────────────── */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60%  { transform: translateX(-6px); }
+  40%,80%  { transform: translateX(6px); }
+}
+.shake { animation: shake .4s ease; }
+
+@keyframes float {
+  0%,100% { transform: translateY(0px); }
+  50%     { transform: translateY(-12px); }
+}
+.float { animation: float 6s ease-in-out infinite; }
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in         { animation: fadeSlide 0.6s ease forwards; }
+.delay-1         { animation-delay: 0.15s; opacity: 0; }
+.delay-2         { animation-delay: 0.30s; opacity: 0; }
+.delay-3         { animation-delay: 0.45s; opacity: 0; }
+
+/* ─── Credenciais de demo ────────────────────────────────── */
+.credential-badge {
+  background: linear-gradient(135deg, #438370 0%, #2c5c4e 100%);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.credential-field {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+.credential-field:hover { background: rgba(255,255,255,0.2); }
+
+/* ─── Card glow ──────────────────────────────────────────── */
+.card-glow {
+  box-shadow:
+    0 25px 60px -10px rgba(67,131,112,0.18),
+    0 8px 32px -8px rgba(0,0,0,0.12);
+}
+
+/* ─── Botão escala ───────────────────────────────────────── */
+.btn-scale:active { transform: scale(0.97); }
