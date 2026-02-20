@@ -39,7 +39,7 @@ function renderAtividades() {
     </div>`:''}
   </div>`;
 
-  const cats = ['Todas','Tarefa Doméstica','Escola','Esporte','Saúde'];
+  const cats = ['Todas','Tarefa Doméstica','Escola','Esporte','Saúde','Social'];
   const filterCatHtml = cats.map(c=>`<button onclick="filterAtividades='${c}'; renderApp()"
     class="px-4 py-1.5 rounded-full text-[12px] font-bold transition-all whitespace-nowrap
     ${filterAtividades===c?'bg-brand-main text-white shadow-md':'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-border-light dark:border-border-dark hover:border-brand-main/50'}">${c}</button>`).join('');

@@ -7,10 +7,10 @@
 document.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons();
 
-  // Redireciona se já logado
-  if (localStorage.getItem('fh_token')) {
-    window.location.href = 'dashboard.html';
-  }
+  // Limpa sessão ao acessar a página de login — garante que o usuário sempre loga manualmente.
+  // (O dashboard.html tem sua própria verificação de sessão.)
+  localStorage.removeItem('fh_token');
+  localStorage.removeItem('fh_user');
 
   // Máscara de telefone
   document.getElementById('reg-phone')?.addEventListener('input', maskPhone);

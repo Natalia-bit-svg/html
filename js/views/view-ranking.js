@@ -21,7 +21,7 @@ function renderRanking() {
     const conquistas = DB.gamification.conquistas.filter(c=>c.memberId===m.name);
     const lv = getLevel(mPts);
     const nextLv = LEVELS.find(l=>l.min>mPts)||lv;
-    const pctNext = nextLv.min>lv.min ? Math.round(((mPts-lv.min)/(nextLv.min-lv.min))*100) : 100;
+    const pctNext = nextLv.min>lv.min ? Math.min(100,Math.max(0,Math.round(((mPts-lv.min)/(nextLv.min-lv.min))*100))) : 100;
     return {...m, pts:mPts, concluidas, pendentes, atrasadas, streak, conquistas, lv, nextLv, pctNext};
   }).sort((a,b)=>b.pts-a.pts);
 
@@ -33,36 +33,27 @@ function renderRanking() {
   const membrosOpts=DB.membros.map(m=>`<option value="${m.name}">${m.name} (${pts[m.name]||0} pts)</option>`).join('');
 
   // Top 3 podium HTML
-  const podiumHTML = membrosStats.length > 0 ? `
-  <div class="flex items-end justify-center gap-4 mb-2">
-    ${membrosStats.slice(0,3).map((m,i) => {
-      const heights = ['h-32','h-24','h-20'];
-      const sizes = ['w-16 h-16','w-12 h-12','w-11 h-11'];
-      const positions = [1,0,2]; // 2nd, 1st, 3rd
-      const reordered = membrosStats.slice(0,3);
-      const display = [reordered[1],reordered[0],reordered[2]].filter(Boolean);
-      const displayIdx = [1,0,2];
-      return '';
-    }).join('')}
-    ${(() => {
-      const display = [membrosStats[1],membrosStats[0],membrosStats[2]].filter(Boolean);
-      const origIdx = [1,0,2];
-      const heights = ['h-24','h-32','h-20'];
-      return display.map((m,i) => {
+  const podiumHTML = membrosStats.length >= 2 ? (() => {
+    // Ordem visual: 2º lugar (esquerda), 1º lugar (centro), 3º lugar (direita)
+    const podiumOrder = [membrosStats[1], membrosStats[0], membrosStats[2]].filter(Boolean);
+    const origIdx     = [1, 0, 2].slice(0, podiumOrder.length);
+    const heights     = ['h-24', 'h-32', 'h-20'];
+    return `<div class="flex items-end justify-center gap-4 mb-2">
+      ${podiumOrder.map((m, i) => {
         const idx = origIdx[i];
-        const avatarFallback=`https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random&color=fff`;
+        const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random&color=fff`;
         return `<div class="flex flex-col items-center gap-2">
-          <div class="text-xl">${medals[idx]||''}</div>
-          <img src="${m.photo||avatarFallback}" class="w-${idx===0?'16':'12'} h-${idx===0?'16':'12'} rounded-full object-cover border-4 shadow-lg" style="border-color:${m.borderHex}">
+          <div class="text-xl">${medals[idx] || ''}</div>
+          <img src="${m.photo || avatarFallback}" class="w-${idx===0?'16':'12'} h-${idx===0?'16':'12'} rounded-full object-cover border-4 shadow-lg" style="border-color:${m.borderHex || '#10b981'}">
           <p class="text-[12px] font-bold text-center max-w-[80px] truncate">${m.name}</p>
           <p class="text-[11px] font-black text-brand-main">${m.pts} pts</p>
-          <div class="${heights[i]} ${podiumBg[idx]} border rounded-t-xl w-20 flex items-end justify-center pb-2">
+          <div class="${heights[i] || 'h-20'} ${podiumBg[idx]} border rounded-t-xl w-20 flex items-end justify-center pb-2">
             <span class="text-2xl">${m.lv.icon}</span>
           </div>
         </div>`;
-      }).join('');
-    })()}
-  </div>` : '';
+      }).join('')}
+    </div>`;
+  })() : '';
 
   // Atividade recente por membro
   const atividadesRecentes = DB.atividades
@@ -295,7 +286,7 @@ function renderLeaderboard() {
   return membros.map((m,i)=>{
     const medals=["🥇","🥈","🥉"]; const medal=medals[i]||`#${i+1}`;
     const next=LEVELS.find(l=>l.min>m.pts)||m.level;
-    const pctNext=next.min>m.level.min?Math.round(((m.pts-m.level.min)/(next.min-m.level.min))*100):100;
+    const pctNext=next.min>m.level.min?Math.min(100,Math.max(0,Math.round(((m.pts-m.level.min)/(next.min-m.level.min))*100))):100;
     const avatarFallback=`https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random&color=fff`;
     return `<div class="flex items-center gap-4 p-4 bg-panel-light dark:bg-panel-dark rounded-2xl border border-border-light dark:border-border-dark shadow-sm hover:shadow-md transition-all">
       <div class="text-2xl w-8 text-center flex-shrink-0">${medal}</div>

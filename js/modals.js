@@ -26,12 +26,15 @@ function openModal(type, id=null, extraData=null) {
       <div class="grid grid-cols-2 gap-3">
         <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Categoria</label>
           <select id="mod-cat" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-900 border-border-light dark:border-border-dark outline-none focus:border-brand-main text-sm">
-            ${['Tarefa Doméstica','Escola','Esporte','Saúde', 'Social'].map(c=>`<option ${at&&at.tag===c.toUpperCase()?'selected':''}>${c}</option>`).join('')}
+            ${['Tarefa Doméstica','Escola','Esporte','Saúde','Social'].map(c=>`<option ${at&&at.tag===c.toUpperCase()?'selected':''}>${c}</option>`).join('')}
           </select></div>
-        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Responsável</label>
-          <select id="mod-resp" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-900 border-border-light dark:border-border-dark outline-none focus:border-brand-main text-sm">
+        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Responsável *</label>
+          ${DB.membros.length===0
+            ? `<div class="w-full p-3 border border-red-200 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 text-sm">⚠️ Nenhum membro cadastrado. <a href="#" onclick="closeModal();navigate('membros');" class="underline font-bold">Cadastre um membro</a> antes de criar atividades.</div><input type="hidden" id="mod-resp" value="">`
+            : `<select id="mod-resp" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-900 border-border-light dark:border-border-dark outline-none focus:border-brand-main text-sm">
             ${DB.membros.map(m=>`<option ${at&&at.resp===m.name?'selected':''}>${m.name}</option>`).join('')}
-          </select></div>
+          </select>`
+          }</div>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Prioridade</label>
@@ -208,13 +211,16 @@ function saveFormAtividade() {
   const title=document.getElementById('mod-title').value.trim();
   const date =document.getElementById('mod-date').value;
   if (!title){toast('Informe o título!','error');return;} if(!date){toast('Informe a data!','error');return;}
+  const respVal=document.getElementById('mod-resp').value;
+  if(!respVal){toast('Selecione um responsável!','error');return;}
+  if(DB.membros.length===0){toast('Cadastre um membro antes de criar atividades!','error');return;}
   const cat=document.getElementById('mod-cat').value;
   const atData={title,date,time:document.getElementById('mod-time').value,tag:cat.toUpperCase(),resp:document.getElementById('mod-resp').value,priority:document.getElementById('mod-prio').value,status:document.getElementById('mod-status').value,notes:document.getElementById('mod-notes').value,color:getTagColor(cat.toUpperCase())};
-  if(idVal){const idx=DB.atividades.findIndex(a=>a.id==idVal); DB.atividades[idx]={...DB.atividades[idx],...atData}; toast('Atividade atualizada!');}
+  if(idVal){const idx=DB.atividades.findIndex(a=>a.id==idVal); DB.atividades[idx]={...DB.atividades[idx],...atData}; saveActivityLog(atData.resp||'Sistema',`Editou a atividade "${atData.title}"`, 'editar'); toast('Atividade atualizada!');}
   else{
     DB.atividades.push({id:Date.now(),...atData});
+    saveActivityLog(atData.resp||'Sistema', `Criou a atividade "${atData.title}" para ${atData.date}`, 'criar');
     toast('Atividade criada!');
-    saveActivityLog('Sistema', `Nova atividade criada: "${atData.title}" para ${atData.resp}`);
   }
   saveDB(); closeModal(); renderApp();
 }
@@ -224,8 +230,16 @@ function saveFormLista() {
   const title=document.getElementById('mod-l-title').value.trim();
   if(!title){toast('Informe o nome!','error');return;}
   const listData={title,border:document.getElementById('mod-l-border').value,icon:document.getElementById('mod-l-icon').value};
-  if(idVal){const idx=DB.listas.findIndex(l=>l.id==idVal); DB.listas[idx]={...DB.listas[idx],...listData}; toast('Lista atualizada!');}
-  else{DB.listas.push({id:Date.now(),pendentes:[],carrinho:[],...listData}); toast('Lista criada!');}
+  if(idVal){
+    const idx=DB.listas.findIndex(l=>l.id==idVal);
+    DB.listas[idx]={...DB.listas[idx],...listData};
+    saveActivityLog('Sistema', `Editou a lista "${listData.title}"`, 'editar');
+    toast('Lista atualizada!');
+  } else {
+    DB.listas.push({id:Date.now(),pendentes:[],carrinho:[],...listData});
+    saveActivityLog('Sistema', `Criou a lista "${listData.title}"`, 'lista');
+    toast('Lista criada!');
+  }
   saveDB(); closeModal(); renderApp();
 }
 
@@ -236,8 +250,20 @@ function saveFormMembro() {
   const imgSrc=document.getElementById('mod-m-preview').src;
   const photo=imgSrc.includes('via.placeholder')?`https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`:imgSrc;
   const memData={name,role:(document.getElementById('mod-m-role').value||'').toUpperCase(),photo,border:document.getElementById('mod-m-border').value,borderHex:document.getElementById('mod-m-borderhex').value};
-  if(idVal){const idx=DB.membros.findIndex(m=>m.id==idVal); DB.membros[idx]={...DB.membros[idx],...memData}; toast('Membro atualizado!');}
-  else{DB.membros.push({id:Date.now(),...memData}); toast('Membro adicionado!');}
+  const oldMem = idVal ? DB.membros.find(m=>m.id==idVal) : null;
+  if(idVal){
+    const idx=DB.membros.findIndex(m=>m.id==idVal);
+    const hadPhoto = oldMem && oldMem.photo && !oldMem.photo.includes('ui-avatars');
+    const hasNewPhoto = memData.photo && !memData.photo.includes('ui-avatars') && memData.photo !== (oldMem && oldMem.photo);
+    DB.membros[idx]={...DB.membros[idx],...memData};
+    if(hasNewPhoto) saveActivityLog('Sistema', `Atualizou a foto de "${memData.name}"`, 'foto');
+    else saveActivityLog('Sistema', `Editou o membro "${memData.name}"`, 'editar');
+    toast('Membro atualizado!');
+  } else {
+    DB.membros.push({id:Date.now(),...memData});
+    saveActivityLog('Sistema', `Adicionou o membro "${memData.name}" (${memData.role})`, 'membro');
+    toast('Membro adicionado!');
+  }
   saveDB(); closeModal(); renderApp();
 }
 
@@ -247,7 +273,15 @@ function saveFormReceita() {
   if(!title){toast('Informe o título!','error');return;}
   const imgSrc=document.getElementById('mod-r-preview').src;
   const recData={title,tag:document.getElementById('mod-r-tag').value.toUpperCase(),time:document.getElementById('mod-r-time').value,diff:document.getElementById('mod-r-diff').value,porcoes:parseInt(document.getElementById('mod-r-porcoes').value)||4,img:imgSrc.includes('via.placeholder')?'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800':imgSrc,steps:document.getElementById('mod-r-steps').value,ingredients:document.getElementById('mod-r-ing').value.split('\n').filter(i=>i.trim())};
-  if(idVal){const idx=DB.receitas.findIndex(r=>r.id==idVal); DB.receitas[idx]={...DB.receitas[idx],...recData}; toast('Receita atualizada!');}
-  else{DB.receitas.push({id:Date.now(),...recData}); toast('Receita criada!');}
+  if(idVal){
+    const idx=DB.receitas.findIndex(r=>r.id==idVal);
+    DB.receitas[idx]={...DB.receitas[idx],...recData};
+    saveActivityLog('Sistema', `Editou a receita "${recData.title}"`, 'editar');
+    toast('Receita atualizada!');
+  } else {
+    DB.receitas.push({id:Date.now(),...recData});
+    saveActivityLog('Sistema', `Criou a receita "${recData.title}" (${recData.tag})`, 'receita');
+    toast('Receita criada!');
+  }
   saveDB(); closeModal(); renderApp();
 }

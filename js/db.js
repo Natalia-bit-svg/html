@@ -15,6 +15,7 @@ const emptyDB = {
     desafios: [],
   },
   notificacoes: [],
+  logs:       [],
   atividades: [],
   listas:     [],
   receitas:   [],
@@ -89,6 +90,7 @@ function getInitialDB() {
   if (!db.gamification.premios_resgatados) db.gamification.premios_resgatados = [];
   if (!db.gamification.desafios)           db.gamification.desafios = [];
   if (!db.notificacoes)                    db.notificacoes = [];
+  if (!db.logs)                            db.logs = [];
   return db;
 }
 

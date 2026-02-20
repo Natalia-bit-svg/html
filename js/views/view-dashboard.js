@@ -6,43 +6,34 @@
 // 7. VIEW — DASHBOARD (aprimorado)
 // =============================================================================
 function renderDashboard() {
-  const hoje = new Date().toISOString().split("T")[0];
+  const hoje       = new Date().toISOString().split('T')[0];
   const atividades = DB.atividades;
 
-  const total = atividades.length;
-  const concluidas = atividades.filter((a) => a.status === "concluida").length;
-  const pendentes = atividades.filter((a) => a.status === "pendente").length;
-  const andamento = atividades.filter((a) => a.status === "andamento").length;
-  const atrasadas = atividades.filter(
-    (a) => a.status === "pendente" && a.date < hoje,
-  ).length;
-  const pct = total > 0 ? Math.round((concluidas / total) * 100) : 0;
+  const total      = atividades.length;
+  const concluidas = atividades.filter(a => a.status==='concluida').length;
+  const pendentes  = atividades.filter(a => a.status==='pendente').length;
+  const andamento  = atividades.filter(a => a.status==='andamento').length;
+  const atrasadas  = atividades.filter(a => a.status==='pendente' && a.date<hoje).length;
+  const pct        = total > 0 ? Math.round((concluidas/total)*100) : 0;
 
   // Atividades da próxima semana
-  const semana = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return d.toISOString().split("T")[0];
+  const semana = Array.from({length:7}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate()+i);
+    return d.toISOString().split('T')[0];
   });
-  const proxSemana = atividades.filter(
-    (a) => semana.includes(a.date) && a.status !== "concluida",
-  ).length;
+  const proxSemana = atividades.filter(a => semana.includes(a.date) && a.status!=='concluida').length;
 
   // Agenda do dia
-  const ativHoje = atividades
-    .filter((a) => a.date === hoje)
-    .sort((a, b) => a.time.localeCompare(b.time));
+  const ativHoje = atividades.filter(a => a.date===hoje).sort((a,b) => a.time.localeCompare(b.time));
 
-  const timelineHTML =
-    ativHoje.length > 0
-      ? ativHoje
-          .map((item) => {
-            const isConcluida = item.status === "concluida";
-            return `<div class="relative pl-8 pb-5 border-l border-border-light dark:border-border-dark last:border-transparent last:pb-0">
-          <div class="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full ${isConcluida ? "bg-slate-400" : "bg-brand-main"} ring-4 ring-white dark:ring-slate-900"></div>
+  const timelineHTML = ativHoje.length > 0
+    ? ativHoje.map(item => {
+        const isConcluida = item.status==='concluida';
+        return `<div class="relative pl-8 pb-5 border-l border-border-light dark:border-border-dark last:border-transparent last:pb-0">
+          <div class="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full ${isConcluida ? 'bg-slate-400' : 'bg-brand-main'} ring-4 ring-white dark:ring-slate-900"></div>
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1">
-              <h4 class="text-[14px] font-semibold ${isConcluida ? "line-through text-slate-400" : ""}">${item.title}</h4>
+              <h4 class="text-[14px] font-semibold ${isConcluida ? 'line-through text-slate-400' : ''}">${item.title}</h4>
               <div class="flex flex-wrap items-center gap-2 mt-1">
                 <span class="text-[11px] font-extrabold px-2 py-0.5 rounded border ${item.color}">${item.tag}</span>
                 <span class="text-[12px] text-slate-400 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i>${item.time}</span>
@@ -51,183 +42,101 @@ function renderDashboard() {
             </div>
             <button onclick="toggleStatusAtividade(${item.id})" title="Marcar concluída"
               class="w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all
-              ${isConcluida ? "bg-emerald-500 border-emerald-500 text-white" : "border-slate-300 hover:border-brand-main"}">
-              ${isConcluida ? '<i data-lucide="check" class="w-3 h-3"></i>' : ""}
+              ${isConcluida ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-brand-main'}">
+              ${isConcluida ? '<i data-lucide="check" class="w-3 h-3"></i>' : ''}
             </button>
           </div></div>`;
-          })
-          .join("")
-      : `<div class="text-center py-6"><i data-lucide="sun" class="w-8 h-8 mx-auto mb-2 text-amber-400 opacity-70"></i>
+      }).join('')
+    : `<div class="text-center py-6"><i data-lucide="sun" class="w-8 h-8 mx-auto mb-2 text-amber-400 opacity-70"></i>
         <p class="text-slate-500 text-sm font-medium">Dia livre! Nenhuma atividade hoje.</p></div>`;
 
   // Faixa semanal
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    const dateStr = d.toISOString().split("T")[0];
-    const count = atividades.filter((a) => a.date === dateStr).length;
-    const conclStr = atividades.filter(
-      (a) => a.date === dateStr && a.status === "concluida",
-    ).length;
-    return {
-      dateStr,
-      count,
-      conclStr,
-      isToday: i === 0,
-      weekday: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][d.getDay()],
-      day: d.getDate(),
-    };
+  const weekDays = Array.from({length:7}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate()+i);
+    const dateStr = d.toISOString().split('T')[0];
+    const count   = atividades.filter(a => a.date===dateStr).length;
+    const conclStr= atividades.filter(a => a.date===dateStr && a.status==='concluida').length;
+    return { dateStr, count, conclStr, isToday:i===0, weekday:['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d.getDay()], day:d.getDate() };
   });
-  const weekStripHTML = weekDays
-    .map(
-      (w) => `
+  const weekStripHTML = weekDays.map(w => `
     <div class="flex flex-col items-center gap-1 cursor-pointer group"
-      onclick="calMonth=${new Date(w.dateStr.split("-")[0], w.dateStr.split("-")[1] - 1, 1).getMonth()}; calYear=${w.dateStr.split("-")[0]}; changeView('calendario')">
+      onclick="calMonth=${new Date(w.dateStr.split('-')[0], w.dateStr.split('-')[1]-1,1).getMonth()}; calYear=${w.dateStr.split('-')[0]}; changeView('calendario')">
       <span class="text-[10px] font-bold uppercase text-slate-400 group-hover:text-brand-main transition-colors">${w.weekday}</span>
       <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all
-        ${w.isToday ? "bg-brand-main text-white shadow-md" : "group-hover:bg-brand-main/10 text-slate-600 dark:text-slate-300"}">${w.day}</div>
-      ${w.count > 0 ? `<div class="w-1.5 h-1.5 rounded-full ${w.isToday ? "bg-white" : "bg-brand-main"} opacity-80"></div>` : '<div class="w-1.5 h-1.5"></div>'}
-    </div>`,
-    )
-    .join("");
+        ${w.isToday ? 'bg-brand-main text-white shadow-md' : 'group-hover:bg-brand-main/10 text-slate-600 dark:text-slate-300'}">${w.day}</div>
+      ${w.count>0 ? `<div class="w-1.5 h-1.5 rounded-full ${w.isToday?'bg-white':'bg-brand-main'} opacity-80"></div>` : '<div class="w-1.5 h-1.5"></div>'}
+    </div>`).join('');
 
   // Progresso circular
-  const radius = 28;
-  const circ = 2 * Math.PI * radius;
-  const strokeDash = `${(pct / 100) * circ} ${circ}`;
+  const radius = 28; const circ = 2*Math.PI*radius;
+  const strokeDash = `${(pct/100)*circ} ${circ}`;
 
   // Membros stats
-  const membrosStats = DB.membros
-    .map((m) => ({
-      ...m,
-      pts: DB.gamification.pontos[m.name] || 0,
-      tarefas: atividades.filter(
-        (a) => a.resp === m.name && a.status === "concluida",
-      ).length,
-      pendentesCount: atividades.filter(
-        (a) => a.resp === m.name && a.status === "pendente",
-      ).length,
-    }))
-    .sort((a, b) => b.pts - a.pts);
+  const membrosStats = DB.membros.map(m => ({
+    ...m, pts: DB.gamification.pontos[m.name]||0,
+    tarefas: atividades.filter(a => a.resp===m.name && a.status==='concluida').length,
+    pendentesCount: atividades.filter(a => a.resp===m.name && a.status==='pendente').length,
+  })).sort((a,b) => b.pts-a.pts);
   const topMembro = membrosStats[0];
 
   // Resumo de listas de compras
-  const totalPendentesCompras = DB.listas.reduce(
-    (s, l) => s + l.pendentes.length,
-    0,
-  );
-  const totalNoCarrinho = DB.listas.reduce((s, l) => s + l.carrinho.length, 0);
+  const totalPendentesCompras = DB.listas.reduce((s,l) => s+l.pendentes.length, 0);
+  const totalNoCarrinho       = DB.listas.reduce((s,l) => s+l.carrinho.length, 0);
 
   // Taxa de conclusão por categoria
-  const categorias = [...new Set(atividades.map((a) => a.tag))];
-  const catStats = categorias
-    .map((cat) => {
-      const catAts = atividades.filter((a) => a.tag === cat);
-      const catConc = catAts.filter((a) => a.status === "concluida").length;
-      return {
-        cat,
-        total: catAts.length,
-        concluidas: catConc,
-        pct:
-          catAts.length > 0 ? Math.round((catConc / catAts.length) * 100) : 0,
-      };
-    })
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 4);
+  const categorias = [...new Set(atividades.map(a => a.tag))];
+  const catStats = categorias.map(cat => {
+    const catAts = atividades.filter(a => a.tag===cat);
+    const catConc = catAts.filter(a => a.status==='concluida').length;
+    return { cat, total: catAts.length, concluidas: catConc, pct: catAts.length>0 ? Math.round((catConc/catAts.length)*100) : 0 };
+  }).sort((a,b) => b.total - a.total).slice(0,4);
 
   // Mural por categoria
   const muralCategories = [
-    {
-      tag: "ESCOLA",
-      icon: "book-open",
-      color: "text-blue-500",
-      bg: "bg-blue-50 dark:bg-blue-900/20",
-    },
-    {
-      tag: "ESPORTE",
-      icon: "trophy",
-      color: "text-orange-500",
-      bg: "bg-orange-50 dark:bg-orange-900/20",
-    },
-    {
-      tag: "SAÚDE",
-      icon: "heart-pulse",
-      color: "text-red-500",
-      bg: "bg-red-50 dark:bg-red-900/20",
-    },
-    {
-      tag: "TAREFA DOMÉSTICA",
-      icon: "home",
-      color: "text-emerald-500",
-      bg: "bg-emerald-50 dark:bg-emerald-900/20",
-    },
-    {
-      tag: "SOCIAL",
-      icon: "home",
-      color: "text-emerald-500",
-      bg: "bg-emerald-50 dark:bg-emerald-900/20",
-    },
+    { tag:'ESCOLA',           icon:'book-open',   color:'text-blue-500',    bg:'bg-blue-50 dark:bg-blue-900/20'     },
+    { tag:'ESPORTE',          icon:'trophy',      color:'text-orange-500',  bg:'bg-orange-50 dark:bg-orange-900/20' },
+    { tag:'SAÚDE',            icon:'heart-pulse', color:'text-red-500',     bg:'bg-red-50 dark:bg-red-900/20'       },
+    { tag:'TAREFA DOMÉSTICA', icon:'home',        color:'text-emerald-500', bg:'bg-emerald-50 dark:bg-emerald-900/20'},
   ];
-  const muralHTML = muralCategories
-    .map((cat) => {
-      const tasks = atividades
-        .filter(
-          (a) =>
-            a.tag === cat.tag && a.date >= hoje && a.status !== "concluida",
-        )
-        .slice(0, 3);
-      if (!tasks.length) return "";
-      return `<div class="bg-panel-light dark:bg-panel-dark p-5 rounded-2xl shadow-sm border border-border-light dark:border-border-dark">
+  const muralHTML = muralCategories.map(cat => {
+    const tasks = atividades.filter(a => a.tag===cat.tag && a.date>=hoje && a.status!=='concluida').slice(0,3);
+    if (!tasks.length) return '';
+    return `<div class="bg-panel-light dark:bg-panel-dark p-5 rounded-2xl shadow-sm border border-border-light dark:border-border-dark">
       <h3 class="font-bold text-[13px] flex items-center gap-2 mb-4 uppercase tracking-widest">
         <span class="p-1.5 rounded-lg ${cat.bg}"><i data-lucide="${cat.icon}" class="w-4 h-4 ${cat.color}"></i></span>
         <span class="text-slate-600 dark:text-slate-300">${cat.tag}</span></h3>
       <div class="space-y-2.5">
-        ${tasks
-          .map((t) => {
-            const p = priorityConfig[t.priority] || priorityConfig.media;
-            return `
+        ${tasks.map(t => { const p=priorityConfig[t.priority]||priorityConfig.media; return `
           <div class="flex items-center gap-3 p-2.5 bg-bg-light dark:bg-slate-800/50 rounded-xl">
             <div class="w-2 h-2 rounded-full flex-shrink-0 ${p.dot}"></div>
             <div class="flex-1 min-w-0">
               <p class="text-[13px] font-semibold truncate">${t.title}</p>
-              <p class="text-[11px] text-slate-400 mt-0.5">${t.date.split("-").reverse().join("/")} · ${t.resp}</p>
-            </div></div>`;
-          })
-          .join("")}
+              <p class="text-[11px] text-slate-400 mt-0.5">${t.date.split('-').reverse().join('/')} · ${t.resp}</p>
+            </div></div>`;}).join('')}
       </div></div>`;
-    })
-    .join("");
+  }).join('');
 
   // Progresso mensal (últimos 6 meses simulado)
   const now = new Date();
-  const monthLabels = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-    return d.toLocaleString("pt-BR", { month: "short" });
+  const monthLabels = Array.from({length:6},(_,i)=>{const d=new Date(now.getFullYear(),now.getMonth()-5+i,1); return d.toLocaleString('pt-BR',{month:'short'});});
+  const monthData = Array.from({length:6},(_,i)=>{
+    const d = new Date(now.getFullYear(),now.getMonth()-5+i,1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const conc = atividades.filter(a=>a.date.startsWith(ym)&&a.status==='concluida').length;
+    const tot  = atividades.filter(a=>a.date.startsWith(ym)).length;
+    return {conc,tot};
   });
-  const monthData = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const conc = atividades.filter(
-      (a) => a.date.startsWith(ym) && a.status === "concluida",
-    ).length;
-    const tot = atividades.filter((a) => a.date.startsWith(ym)).length;
-    return { conc, tot };
-  });
-  const maxMonth = Math.max(...monthData.map((m) => m.tot), 1);
-  const chartBarsHTML = monthData
-    .map(
-      (m, i) => `
+  const maxMonth = Math.max(...monthData.map(m=>m.tot),1);
+  const chartBarsHTML = monthData.map((m,i)=>`
     <div class="flex flex-col items-center gap-1 flex-1">
-      <span class="text-[9px] font-bold text-brand-main">${m.conc > 0 ? m.conc : ""}</span>
+      <span class="text-[9px] font-bold text-brand-main">${m.conc>0?m.conc:''}</span>
       <div class="w-full relative flex flex-col justify-end" style="height:60px">
         <div class="w-full rounded-t-lg bg-slate-100 dark:bg-slate-800 absolute bottom-0" style="height:100%"></div>
-        <div class="w-full rounded-t-lg bg-brand-main/80 absolute bottom-0 transition-all duration-700" style="height:${m.tot > 0 ? Math.round((m.conc / maxMonth) * 100) : 0}%"></div>
-        ${m.tot > 0 ? `<div class="w-full rounded-t-lg border-2 border-dashed border-brand-main/30 absolute bottom-0" style="height:${Math.round((m.tot / maxMonth) * 100)}%"></div>` : ""}
+        <div class="w-full rounded-t-lg bg-brand-main/80 absolute bottom-0 transition-all duration-700" style="height:${m.tot>0?Math.round((m.conc/maxMonth)*100):0}%"></div>
+        ${m.tot>0?`<div class="w-full rounded-t-lg border-2 border-dashed border-brand-main/30 absolute bottom-0" style="height:${Math.round((m.tot/maxMonth)*100)}%"></div>`:''}
       </div>
       <span class="text-[9px] text-slate-400 font-medium capitalize">${monthLabels[i]}</span>
-    </div>`,
-    )
-    .join("");
+    </div>`).join('');
 
   return `<div class="flex flex-col xl:flex-row gap-8 h-full items-start">
     <!-- ═══ COLUNA ESQUERDA ═══ -->
@@ -240,7 +149,7 @@ function renderDashboard() {
         <div class="relative z-10 flex items-start justify-between gap-4">
           <div class="flex-1">
             <p class="text-emerald-200 text-[11px] font-bold uppercase tracking-widest mb-1">
-              ${new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+              ${new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}
             </p>
             <h3 class="text-2xl font-bold mb-4">${DB.settings.familyName} 👋</h3>
             <div class="flex gap-2 flex-wrap">
@@ -293,8 +202,8 @@ function renderDashboard() {
         </div>
         <div class="bg-panel-light dark:bg-panel-dark rounded-xl p-4 border border-border-light dark:border-border-dark shadow-sm">
           <div class="flex items-center gap-3 mb-2">
-            <div class="p-2 ${atrasadas > 0 ? "bg-red-50 dark:bg-red-900/20" : "bg-slate-50 dark:bg-slate-800"} rounded-lg"><i data-lucide="alert-triangle" class="w-4 h-4 ${atrasadas > 0 ? "text-red-500" : "text-slate-400"}"></i></div>
-            <p class="text-2xl font-black ${atrasadas > 0 ? "text-red-500" : "text-slate-400"}">${atrasadas}</p>
+            <div class="p-2 ${atrasadas>0?'bg-red-50 dark:bg-red-900/20':'bg-slate-50 dark:bg-slate-800'} rounded-lg"><i data-lucide="alert-triangle" class="w-4 h-4 ${atrasadas>0?'text-red-500':'text-slate-400'}"></i></div>
+            <p class="text-2xl font-black ${atrasadas>0?'text-red-500':'text-slate-400'}">${atrasadas}</p>
           </div>
           <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">Atrasadas</p>
         </div>
@@ -316,17 +225,13 @@ function renderDashboard() {
 
       <!-- Destaques rápidos -->
       <div class="grid grid-cols-2 gap-3">
-        ${
-          topMembro
-            ? `
+        ${topMembro ? `
         <div class="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-900/10 rounded-xl p-3.5 border border-amber-200 dark:border-amber-800/40">
           <p class="text-[9px] font-extrabold uppercase tracking-widest text-amber-500 mb-2">🏆 Líder</p>
           <div class="flex items-center gap-2">
-            <img src="${topMembro.photo || "https://ui-avatars.com/api/?name=" + encodeURIComponent(topMembro.name)}" class="w-8 h-8 rounded-full object-cover">
+            <img src="${topMembro.photo||'https://ui-avatars.com/api/?name='+encodeURIComponent(topMembro.name)}" class="w-8 h-8 rounded-full object-cover">
             <div><p class="text-[13px] font-bold truncate">${topMembro.name}</p><p class="text-[10px] text-amber-600 font-bold">${topMembro.pts} pts</p></div>
-          </div></div>`
-            : "<div></div>"
-        }
+          </div></div>` : '<div></div>'}
         <div class="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 rounded-xl p-3.5 border border-blue-200 dark:border-blue-800/40">
           <p class="text-[9px] font-extrabold uppercase tracking-widest text-blue-500 mb-2">🛒 Compras</p>
           <p class="text-xl font-black text-blue-600">${totalPendentesCompras}</p>
@@ -335,22 +240,16 @@ function renderDashboard() {
       </div>
 
       <!-- Próxima semana info -->
-      ${
-        proxSemana > 0
-          ? `
+      ${proxSemana > 0 ? `
       <div class="bg-panel-light dark:bg-panel-dark rounded-xl p-3.5 border border-border-light dark:border-border-dark shadow-sm flex items-center gap-3">
         <div class="p-2 bg-brand-main/10 rounded-lg"><i data-lucide="calendar" class="w-4 h-4 text-brand-main"></i></div>
-        <div><p class="text-[13px] font-bold">${proxSemana} atividade${proxSemana > 1 ? "s" : ""} essa semana</p>
+        <div><p class="text-[13px] font-bold">${proxSemana} atividade${proxSemana>1?'s':''} essa semana</p>
           <p class="text-[11px] text-slate-400">Próximos 7 dias</p></div>
         <button onclick="changeView('calendario')" class="ml-auto text-brand-main hover:underline text-[12px] font-bold">Ver →</button>
-      </div>`
-          : ""
-      }
+      </div>` : ''}
 
       <!-- Desempenho por membro -->
-      ${
-        DB.membros.length > 0
-          ? `
+      ${DB.membros.length > 0 ? `
       <div class="bg-panel-light dark:bg-panel-dark rounded-2xl p-5 shadow-sm border border-border-light dark:border-border-dark">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -359,27 +258,21 @@ function renderDashboard() {
           <button onclick="changeView('ranking')" class="text-brand-main text-[11px] font-bold hover:underline">Ranking →</button>
         </div>
         <div class="space-y-3">
-          ${membrosStats
-            .map(
-              (m) => `
+          ${membrosStats.map(m => `
           <div class="flex items-center gap-3">
-            <img src="${m.photo || "https://ui-avatars.com/api/?name=" + encodeURIComponent(m.name)}" class="w-7 h-7 rounded-full object-cover flex-shrink-0">
+            <img src="${m.photo||'https://ui-avatars.com/api/?name='+encodeURIComponent(m.name)}" class="w-7 h-7 rounded-full object-cover flex-shrink-0">
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between mb-1">
                 <p class="text-[12px] font-semibold truncate">${m.name}</p>
                 <span class="text-[11px] font-bold text-brand-main">${m.tarefas} ✓</span>
               </div>
               <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full rounded-full bg-gradient-to-r from-brand-main to-emerald-400 transition-all duration-700" style="width:${total > 0 ? Math.round((m.tarefas / total) * 100) : 0}%"></div>
+                <div class="h-full rounded-full bg-gradient-to-r from-brand-main to-emerald-400 transition-all duration-700" style="width:${total>0?Math.round((m.tarefas/total)*100):0}%"></div>
               </div>
             </div>
-          </div>`,
-            )
-            .join("")}
+          </div>`).join('')}
         </div>
-      </div>`
-          : ""
-      }
+      </div>` : ''}
 
       <!-- Agenda de Hoje -->
       <div class="bg-panel-light dark:bg-panel-dark rounded-2xl p-5 shadow-sm border border-border-light dark:border-border-dark">
@@ -397,36 +290,28 @@ function renderDashboard() {
     <div class="flex-1 w-full space-y-6">
 
       <!-- Taxa de conclusão por categoria -->
-      ${
-        catStats.length > 0
-          ? `
+      ${catStats.length > 0 ? `
       <div>
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-xl font-bold">Por Categoria</h3>
           <button onclick="changeView('atividades')" class="text-brand-main text-sm font-bold hover:underline">Ver todas →</button>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          ${catStats
-            .map(
-              (cs) => `
+          ${catStats.map(cs => `
           <div class="bg-panel-light dark:bg-panel-dark rounded-xl p-4 border border-border-light dark:border-border-dark shadow-sm text-center">
             <div class="relative inline-flex items-center justify-center w-14 h-14 mb-3">
               <svg width="56" height="56" viewBox="0 0 56 56" class="-rotate-90">
                 <circle cx="28" cy="28" r="22" fill="none" stroke="#e2e8f0" stroke-width="4"/>
                 <circle cx="28" cy="28" r="22" fill="none" stroke="#438370" stroke-width="4"
-                  stroke-dasharray="${(cs.pct / 100) * (2 * Math.PI * 22)} ${2 * Math.PI * 22}" stroke-linecap="round"/>
+                  stroke-dasharray="${(cs.pct/100)*(2*Math.PI*22)} ${2*Math.PI*22}" stroke-linecap="round"/>
               </svg>
               <span class="absolute text-[11px] font-black text-brand-main">${cs.pct}%</span>
             </div>
             <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">${cs.cat}</p>
             <p class="text-[11px] text-slate-400">${cs.concluidas}/${cs.total}</p>
-          </div>`,
-            )
-            .join("")}
+          </div>`).join('')}
         </div>
-      </div>`
-          : ""
-      }
+      </div>` : ''}
 
       <!-- Mural da tribo -->
       <div>
@@ -436,29 +321,21 @@ function renderDashboard() {
             Ver tudo <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          ${
-            muralHTML ||
-            `<div class="col-span-2 text-center py-12 text-slate-400">
+          ${muralHTML || `<div class="col-span-2 text-center py-12 text-slate-400">
             <i data-lucide="party-popper" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
-            <p class="font-medium">Tudo em dia! Nenhum evento futuro.</p></div>`
-          }
+            <p class="font-medium">Tudo em dia! Nenhum evento futuro.</p></div>`}
         </div>
       </div>
 
       <!-- Visão geral das receitas -->
-      ${
-        DB.receitas.length > 0
-          ? `
+      ${DB.receitas.length > 0 ? `
       <div>
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-xl font-bold">Receitas da Família</h3>
           <button onclick="changeView('receitas')" class="text-brand-main text-sm font-bold hover:underline">Ver todas →</button>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          ${DB.receitas
-            .slice(0, 2)
-            .map(
-              (r) => `
+          ${DB.receitas.slice(0,2).map(r => `
           <div class="bg-panel-light dark:bg-panel-dark rounded-2xl overflow-hidden shadow-sm border border-border-light dark:border-border-dark flex">
             <img src="${r.img}" alt="${r.title}" class="w-20 h-20 object-cover flex-shrink-0">
             <div class="p-3 flex-1 min-w-0">
@@ -469,13 +346,9 @@ function renderDashboard() {
               </div>
               <p class="text-[11px] text-slate-400 mt-1">${r.diff} · ${r.porcoes} porções</p>
             </div>
-          </div>`,
-            )
-            .join("")}
+          </div>`).join('')}
         </div>
-      </div>`
-          : ""
-      }
+      </div>` : ''}
     </div>
   </div>`;
 }

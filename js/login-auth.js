@@ -11,6 +11,31 @@
 
 const API_BASE = './';
 
+// ─── Limpeza de contas e dados não-demo ──────────────────────────────────────
+// Ao carregar, garante que só a conta demo existe e remove dados de outros usuários.
+(function cleanupNonDemoData() {
+  const demoEmail = 'admin@familyhub.com';
+  // Varre o localStorage e apaga qualquer chave de DB de outro usuário
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('familyHubDB_') && key !== `familyHubDB_${demoEmail}`) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+  // Limpa contas não-demo do fh_local_accounts
+  try {
+    const raw = localStorage.getItem('fh_local_accounts');
+    if (raw) {
+      const accounts = JSON.parse(raw);
+      const cleaned  = {};
+      if (accounts[demoEmail]) cleaned[demoEmail] = accounts[demoEmail];
+      localStorage.setItem('fh_local_accounts', JSON.stringify(cleaned));
+    }
+  } catch (_) {}
+})();
+
 // ─── Chave de armazenamento de contas locais ──────────────────────────────────
 const LOCAL_ACCOUNTS_KEY = 'fh_local_accounts';
 
@@ -37,21 +62,20 @@ function saveLocalAccounts(accounts) {
   localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts));
 }
 
-/** Garante que a conta de demo existe sempre */
+/** Garante que APENAS a conta demo existe — apaga qualquer outra conta */
 function ensureDemoAccount() {
-  const accounts = getLocalAccounts();
-  if (!accounts['admin@familyhub.com']) {
-    accounts['admin@familyhub.com'] = {
-      id:           'local_admin',
-      name:         'Admin Demo',
-      email:        'admin@familyhub.com',
-      passwordHash: localHash('123456'),
-      familyName:   'Família Demo',
-      phone:        '(11) 99999-9999',
-      age:          30,
-    };
-    saveLocalAccounts(accounts);
-  }
+  const demoEmail = 'admin@familyhub.com';
+  const demoAccount = {
+    id:           'local_admin',
+    name:         'Admin Demo',
+    email:        demoEmail,
+    passwordHash: localHash('123456'),
+    familyName:   'Família Demo',
+    phone:        '(11) 99999-9999',
+    age:          30,
+  };
+  // Mantém APENAS a conta demo, apagando qualquer outra
+  saveLocalAccounts({ [demoEmail]: demoAccount });
 }
 
 // ─── Login offline ────────────────────────────────────────────────────────────
@@ -77,28 +101,9 @@ function loginOffline(email, pass) {
 
 // ─── Registro offline ─────────────────────────────────────────────────────────
 function registerOffline(name, email, pass, phone, age) {
-  ensureDemoAccount();
-  const accounts = getLocalAccounts();
-  const key      = email.toLowerCase();
-
-  if (accounts[key])
-    return { ok: false, error: 'Este e-mail já está cadastrado.' };
-
-  const newAccount = {
-    id:           'local_' + Date.now(),
-    name,
-    email:        key,
-    passwordHash: localHash(pass),
-    familyName:   name + "'s Family",
-    phone:        phone || '',
-    age:          age || null,
-  };
-  accounts[key] = newAccount;
-  saveLocalAccounts(accounts);
-
-  const token = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-  const user  = { id: newAccount.id, name, email: key, familyName: newAccount.familyName };
-  return { ok: true, token, user };
+  // Modo offline: apenas a conta demo é permitida.
+  // Para criar novas contas, conecte ao servidor PHP.
+  return { ok: false, error: 'Cadastro de novas contas requer conexão com o servidor. Use a conta demo: admin@familyhub.com / 123456' };
 }
 
 // ─── Persistência após login bem-sucedido ────────────────────────────────────

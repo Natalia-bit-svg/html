@@ -31,7 +31,7 @@ function getTagColor(cat) {
     'ESCOLA':           'text-blue-500 bg-blue-50 dark:bg-blue-900/30',
     'ESPORTE':          'text-orange-500 bg-orange-50 dark:bg-orange-900/30',
     'SAÚDE':            'text-red-500 bg-red-50 dark:bg-red-900/30',
-    'SOCIAL':           'text-purple-500 bg-purple-50 dark:bg-purple-900/30',
+    'SOCIAL':           'text-purple-500 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400',
   };
   return map[cat] || 'text-slate-500 bg-slate-100';
 }

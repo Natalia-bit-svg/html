@@ -42,7 +42,7 @@ function renderCalendar() {
 
   const selectClass = 'px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm font-medium focus:outline-none focus:border-brand-main';
   const membrosOpts = ['Todos',...DB.membros.map(m=>m.name)].map(m=>`<option ${calFilterMembro===m?'selected':''}>${m}</option>`).join('');
-  const catOpts     = ['Todas','Tarefa Doméstica','Escola','Esporte','Saúde', 'Social', ].map(c=>`<option ${calFilterCat===c?'selected':''}>${c}</option>`).join('');
+  const catOpts     = ['Todas','Tarefa Doméstica','Escola','Esporte','Saúde','Social'].map(c=>`<option ${calFilterCat===c?'selected':''}>${c}</option>`).join('');
 
   return `<div class="flex flex-col h-full bg-panel-light dark:bg-panel-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
     <div class="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-border-light dark:border-border-dark bg-slate-50/50 dark:bg-slate-900/50">
